@@ -1,0 +1,9 @@
+Bot's token: 907199318:AAGRyXZXUlUOtFa4j8j8gsvhp6ptZM-geak
+
+db telegram-bot:
+    tables: clients
+
+
+Table clients:
+user_id | user_name | user_lastname | user_birth_date
+

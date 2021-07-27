@@ -1,90 +1,115 @@
 import telebot
 import psycopg2
 from psycopg2.extras import DictCursor
+import bot_settings
+from datetime import datetime
 
-
-bot = telebot.TeleBot()
+bot = telebot.TeleBot(bot_settings.telegram_bot_token)
 
 
 
 
 location = 'menu'
-name = ''
-last_name = ''
-birth_date = ''
+location_sec = 'index'
+day_bal = 0
+mon_bal = 0
+day_in = 200
+mon_in = 1000
+date_last = ""
+date_now = ""
+datem_last = ""
+datem_now = ""
 
 
-@bot.message_handler(func=lambda message: True, content_types=['text'])
-def get_message(message):
-    global location, name, last_name, birth_date
+@bot.message_handler(commands=['start', 'help'])
+def help_menu(message):
+    global location
+    location = "menu"
     print(location)
-    #go to main menu
-    if message.text.lower() == "hi" or message.text.lower() == "menu" and location == 'menu':
-        bot.send_message(message.from_user.id,
-                         """
-                         Hello, choose your action:
-                             1)Registration
-                             2)Deleting
-                         """)
+    keyboard = telebot.types.ReplyKeyboardMarkup(True)
+    keyboard.row('Баланс', 'Налаштувати Бота')
+    bot.send_message(message.chat.id, 'Щоб налаштувати бота напиши /set \nЩо б почати користуватися напиши /bal\nАбо вибери з меню.',
+                    reply_markup=keyboard)
+    
 
-    #if we in menu and choose Registration, ask name
-    elif message.text == "1" or message.text.lower() == "registration" or message.text.lower() == 'no':
-        location = 'name'
-        bot.send_message(message.from_user.id,
-                         """
-                         What is your name?
-                         """)
-        location = 'last_name'
 
-    #if we write command '/help'
-    elif message.text == "/help":
-        bot.send_message(message.from_user.id,
-                         """First write 'menu' to open the menu.
-                            You can choose your action by writing number of action or writing name of action, like '1' or 'Registration.
-                         """)
-    # navigation
+@bot.message_handler(commands=['bal'])
+def start_message(message):
+    global location, location_sec
+    print(location)
+    location = 'menu'
+    keyboard = telebot.types.ReplyKeyboardMarkup(True)
+    keyboard.row('День', 'Місяць')
+    bot.send_message(message.chat.id, 'Вибери Баланс', reply_markup=keyboard)
+    
+    
+@bot.message_handler(content_types=['text'])
+def processing(message):
+    global location, location_sec, day_bal, mon_bal, date_last, date_now, datem_last, datem_now
+    print(location)
+    print(datetime.now().day)
+    date_now = datetime.now().day
+    datem_now = datetime.now().month
+    
+    if date_last != datetime.now().day:
+        date_last = datetime.now().day
+        day_bal += day_in
+    if datem_last != datetime.now().month:
+        datem_last = datetime.now().month
+        mon_bal += mon_in
+
+   
+    if message.text == 'Налаштувати Бота':
+        print(location)
+        location = 'set'
+        keyboard = telebot.types.ReplyKeyboardMarkup(True)
+        keyboard.row('Змінити денний +', 'Змінити міячний +')
+        bot.send_message(message.chat.id, 'Денний +: 200\nМісячний плюс:1000', reply_markup=keyboard)
+    
+
+
+    elif message.text == 'Баланс':
+        print(location)
+        location == 'bal'
+        keyboard = telebot.types.ReplyKeyboardMarkup(True)
+        keyboard.row('День', 'Місяць')
+        bot.send_message(message.chat.id, 'Вибери Баланс', reply_markup=keyboard)
+    elif message.text in ('День', 'Місяць'):
+        if message.text == 'День':
+            print(location)
+            location = 'day'
+            bot.send_message(message.chat.id, 'Денний Баланс: {0}'.format(day_bal))
+        else:
+            print(location)
+            location = 'mon'
+            bot.send_message(message.chat.id, 'Місячний Баланс: {0}'.format(mon_bal))
+    elif location in ('day','mon'):
+        try:
+            if location == 'day':
+                print(location)
+                day_bal = day_bal - int(message.text.lower())
+                print(message)
+                bot.send_message("678837081", 'Денний Баланс: {0}'.format(day_bal))
+                bot.send_message(message.chat.id, 'Денний Баланс: {0}'.format(day_bal))
+            else:
+                print(location)
+                mon_bal = mon_bal - int(message.text.lower())
+                bot.send_message(message.chat.id, 'Місячний Баланс: {0}'.format(mon_bal))
+        except:
+            print(location)
+            bot.send_message(message.chat.id, "Щось десь не туди введено.")
+    
     else:
-        #this registration way
+        try:
+            isinstance(int(message.text), int) == True
+            bot.send_message(message.chat.id, "Треба вибрати денний або місячний баланс.")
+        except:
+            print("last")
+            bot.send_message(message.chat.id, "Щось десь не туди введено.")
+        
+           
 
-        #we already take neme, so save name and go to last_name
-        if location == 'last_name':
-            name = message.text
-            bot.send_message(message.from_user.id,
-                             """
-                             What is your last name?
-                             """)
-            location = 'birth_date'
 
-        # we already take last name, so save last_name and go birth_day
-        elif location == 'birth_date':
-            last_name = message.text
-            bot.send_message(message.from_user.id,
-                             """
-                             What is your birth date?(DD.MM.YYYY)
-                             """)
-            location = 'accepting'
-
-        # we alreade take birth_date, so save it and confirm all data
-        elif location == 'accepting':
-            birth_date = message.text.lower()
-            bot.send_message(message.from_user.id,
-                             "So, confirm your data:\nYou are " + name + ' ' + last_name + " and birth " + str(
-                                 birth_date) + "\nSend 'Yes' if all right and 'No' if you want change your data.\nIf you want refuse send 'Quit' ")
-            location = 'save_or_not'
-
-        #answer to confirmation
-        elif location == 'save_or_not':
-            if message.text.lower() == 'yes':
-                bot.send_message(message.from_user.id, 'Saving data, wait please.')
-
-            # enter data again
-            elif message.text.lower() == 'no':
-                name, last_name, birth_date = '', '', ''
-                name(message)
-            # not save and go to meny
-            elif message.text.lower() == 'quit':
-                name, last_name, birth_date = '', '', ''
-                location = 'menu'
 
 
 bot.polling(none_stop=True, interval = 0)

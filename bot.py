@@ -36,7 +36,21 @@ datem_now = ""
 password = "123456"
 room_home="123456"
 room_current="123456"
+help_text ="""
+Завантажено базові команди
+Спочатку потрібно налаштувати бота: /setup
 
+Налаштування:
+Показані дані для твоєї кімнати.
+Для того що б долучитися до іншої кімнати, спитай домашню кімнату власника і пароль.
+Далі: /change_room і слідувати інструкціям.
+
+Використання:
+Будь яке число буде відніматися від денного балансу.
+Для відняття від місячного балансу використати: 
+/mon_bal
+/start -> Баланс -> Місячна витрата
+"""
 #--------------------------------------------------------
 # Messages handling
 #-------------------------------------------------------
@@ -45,21 +59,28 @@ room_current="123456"
 def get_text_messages(message):
     # Если написали «Привет»
     try:
-        if message.text in ["/help", "/start"]:
-            
+        
+        
+        if message.text == "/help":
+            markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+            markup.add('/start', 'Перевірити Баланс', '/setup', "/mon_bal")
+            bot.send_message(message.from_user.id, text='Завантажено базові команди', reply_markup=markup)
+        
+        elif message.text == "/start":
             keyboard = types.InlineKeyboardMarkup()
 
             key_bal = types.InlineKeyboardButton(text='Баланс', callback_data='balance') 
             keyboard.add(key_bal)
 
-            key_setup = types.InlineKeyboardButton(text='Setup', callback_data='setup') 
+            key_setup = types.InlineKeyboardButton(text='Налаштування', callback_data='setup') 
             keyboard.add(key_setup)
 
             bot.send_message(message.from_user.id, text='Привіт, чим можу допомогти?', reply_markup=keyboard)
         
         elif message.text == "/setup":
             setup_menu(message)
-        
+        elif message.text == "Перевірити Баланс":
+            balance(message)
         elif message.text == "/change_day":
             sent = bot.send_message(message.chat.id, 'Вкажи новий денний приріст')
             bot.register_next_step_handler(sent, set_day)
@@ -76,13 +97,17 @@ def get_text_messages(message):
             sent = bot.send_message(message.chat.id, 'Вкажи новий пароль')
             bot.register_next_step_handler(sent, set_pass)
         
+        elif message.text == "/mon_bal":
+            sent = bot.send_message(message.chat.id, 'Вкажи місячну витрату')
+            bot.register_next_step_handler(sent, mon_bal_handler)
+        
         elif type(int(message.text)) == int:
             day_bal_handler(message)
         
         else:
             bot.send_message(message.from_user.id, "Я тебя не розумію. Напиши /help.")
     except Exception as e:
-        bot.send_message(message.from_user.id, e)
+        bot.send_message(message.from_user.id, "Неправильно введено")
 
 #--------------------------------------------------------
 #Callback
@@ -171,7 +196,6 @@ def set_room(message):
         if room == room_home:
             room_current = room 
         elif rooms.get(room) == password:
-            bot.send_message(message.from_user.id, "True")
             room_current = room
         else:
             bot.send_message(message.from_user.id, "Немає такої кімнати або пароль не вірний")
@@ -205,6 +229,14 @@ def day_bal_handler(message):
    
     day_bal = int(day_bal) - int(message.text)
     bot.send_message(message.from_user.id, "Денний баланс {}".format(day_bal))
+
+def balance(message):
+    keyboard = types.InlineKeyboardMarkup()
+
+    key_mon_bal = types.InlineKeyboardButton(text='Місячна витрата', callback_data='mon_bal')  
+    keyboard.add(key_mon_bal)
+
+    bot.send_message(message.from_user.id, text='Денний: {0}\nМіячний баланс: {1}'.format(day_bal, mon_bal), reply_markup=keyboard)
 
 
 bot.polling(none_stop=True, interval = 0)

@@ -17,17 +17,25 @@ DBP = DbProcessor
 #--------------------------------------------------------
 # Test vars
 #-------------------------------------------------------
+
+
+rooms = {123456:"123456",
+         111111:"111111"}
+
+
 location = 'menu'
 location_sec = 'index'
-day_bal = 0
-mon_bal = 0
+day_bal = 300
+mon_bal = 2000
 day_in = 200
 mon_in = 1000
 date_last = ""
 date_now = ""
 datem_last = ""
 datem_now = ""
-
+password = "123456"
+room_home="123456"
+room_current="123456"
 
 #--------------------------------------------------------
 # Messages handling
@@ -48,6 +56,7 @@ def get_text_messages(message):
             keyboard.add(key_setup)
 
             bot.send_message(message.from_user.id, text='Привіт, чим можу допомогти?', reply_markup=keyboard)
+        
         elif message.text == "/setup":
             setup_menu(message)
         
@@ -60,9 +69,16 @@ def get_text_messages(message):
             bot.register_next_step_handler(sent, set_mon)
         
         elif message.text == "/change_room":
-            bot.send_message(message.from_user.id, "Ще не імплементовано")
+            sent = bot.send_message(message.chat.id, 'Вкажи нову кімнату у фарматі Номер_кімнати#пароль')
+            bot.register_next_step_handler(sent, set_room)
+        
+        elif message.text == "/change_password":
+            sent = bot.send_message(message.chat.id, 'Вкажи новий пароль')
+            bot.register_next_step_handler(sent, set_pass)
+        
         elif type(int(message.text)) == int:
             day_bal_handler(message)
+        
         else:
             bot.send_message(message.from_user.id, "Я тебя не розумію. Напиши /help.")
     except Exception as e:
@@ -82,11 +98,12 @@ def callback_worker(call):
 Міячний +: {1}  
 Змінити /change_mon
 
-Активна кімната: 3523343
+Активна кімната: {2}
 Змінити /change_room
 
-Домашня кімната: 1223534 
-""".format(day_in, mon_in))
+Домашня кімната: {3}
+Змінити пароль /change_password
+""".format(day_in, mon_in, room_current, room_home))
     elif call.data == "balance":
         keyboard = types.InlineKeyboardMarkup()
 
@@ -114,11 +131,12 @@ def setup_menu(message_type):
 Міячний +: {1}  
 Змінити /change_mon
 
-Активна кімната: 3523343
+Активна кімната: {2}
 Змінити /change_room
 
-Домашня кімната: 1223534 
-""".format(day_in, mon_in))
+Домашня кімната: {3}
+Змінити пароль /change_password
+""".format(day_in, mon_in, room_current, room_home))
 def set_day(message):
     global day_in
     try:
@@ -136,6 +154,42 @@ def set_mon(message):
             setup_menu(message)
     except:
         bot.send_message(message.from_user.id, "Введено не число")
+
+def set_pass(message):
+    global password
+    try:
+        password = message.text
+        setup_menu(message)
+    except:
+        bot.send_message(message.from_user.id, "Щось не так")
+
+def set_room(message):
+    global room_current, rooms
+    try:
+        room = int(message.text.split("#")[0])
+        password = message.text.split("#")[1]
+        if room == room_home:
+            room_current = room 
+        elif rooms.get(room) == password:
+            bot.send_message(message.from_user.id, "True")
+            room_current = room
+        else:
+            bot.send_message(message.from_user.id, "Немає такої кімнати або пароль не вірний")
+        bot.send_message(message.from_user.id, """
+Денний +: {0}   
+Змінити /change_day
+
+Міячний +: {1}  
+Змінити /change_mon
+
+Активна кімната: {2}
+Змінити /change_room
+
+Домашня кімната: {3}
+Змінити пароль /change_password
+""".format(day_in, mon_in, room_current, room_home))
+    except Exception as e:
+        bot.send_message(message.from_user.id, e)
 
 def mon_bal_handler(value):
     global mon_bal

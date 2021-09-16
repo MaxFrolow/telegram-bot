@@ -5,44 +5,33 @@ from psycopg2.extras import DictCursor
 
 
 conn = psycopg2.connect(dbname='telegram_bot', user='bot',
-                        password='777WhyMeLucky777', host='localhost')
+                        password='777WhyMeLucky777', host='db', port="5432")
 
 
 
 class DbProcessor(object):
-    # saving data into DataBase
-    conn = psycopg2.connect(dbname='telegram_bot', user='bot',
-                            password='777WhyMeLucky777', host='localhost')
-    def save_data(self, db, table, *args):
+    # saving data into DataBase   
+    def save_data(table, fields, values):
         cursor = conn.cursor(cursor_factory=DictCursor)
-        save_command = "INSERT INTO {} {}\n VALUES {};".format (table, db.get(table), args)
-        print(save_command)
-        cursor.execute(save_command)
-        conn.commit()
-        print('Saved.')
-
-    def get_data(self):
+        try:
+            cursor.execute('INSERT INTO {0} ({1}) values({1});'.format(table, fields, values))
+            conn.commit()
+        except Exception as e:
+            print(e)   
+    
+   
+    
+    def get_data(table, id_type, id_value):
         cursor = conn.cursor(cursor_factory=DictCursor)
-        cursor.execute('SELECT * FROM clients;')
-        data = ''
-        for row in cursor.fetchall():
-            data += 'User ID: ' + str(row.get('user_id')) + '\n'
-            data += 'Name: ' + str(row.get('user_name')) + '\n'
-            data += 'Last Name: ' + str(row.get('user_lastname')) + '\n'
-            data += 'Birth date: ' + str(row.get('user_birth_date')) + '\n\n'
-        conn.close()
-        return data
+        try:
+            cursor.execute('SELECT * FROM {0} WHERE {1}={2};'.format(table, id_type, id_value))
+            data = cursor.fetchone()
+            return data
+        except:
+            print("nothing to show")
 
-    def delete_data(self, user_id):
-        cursor = conn.cursor(cursor_factory=DictCursor)
-        cursor.execute(
-            """
-            DELETE FROM clients
-                WHERE user_id = {};
-            """.format(user_id))
-        conn.commit()
-
-    def update_data(self,table, user_id, param, value):
+ 
+    def update_data( table, id_type, id_value, password, param, value):
         cursor = conn.cursor(cursor_factory=DictCursor)
         if param.endswith(',') or param.endswith(')'):
             param = param[:-1]
@@ -53,11 +42,10 @@ class DbProcessor(object):
                 """
                 UPDATE {}
                     SET {} = '{}'
-                    WHERE user_id = {}
-                """.format(table, param, value, user_id)
+                    WHERE {} = {};
+                """.format(table, param, value, id_type, id_value, )
         print(sql)
         cursor.execute(sql)
         conn.commit()
-
 
 

@@ -57,9 +57,22 @@ help_text ="""
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
     # Если написали «Привет»
+    
     try:
+        currentDay = int(datetime.now().strftime('%d'))
+        currentMonth = int(datetime.now().strftime('%m'))
+        data = DBP.get_room_data(message.chat.id, "room_day_in, room_mon_in, day_bal, mon_bal, day_in, mon_in, room_id")
+        if currentDay != data[0]:
+            summ = int(data[4]) + int(data[2]) 
+            DBP.update_data("rooms", "room_id", data[6], "(day_bal, room_day_in)", "('{}', '{}')".format( summ, currentDay))
+        if currentMonth != data[1]:
+            summ = int(data[5]) + int(data[3]) 
+            DBP.update_data("rooms", "room_id", data[6], "(mon_bal, room_mon_in)", "('{}', '{}')".format(summ , currentMonth))
         
-        
+    except:
+        print('empty')
+    try:
+    
         if message.text == "/help":
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             markup.add('/start', 'Перевірити Баланс', '/setup', "/mon_bal")
@@ -116,7 +129,7 @@ def get_text_messages(message):
 def callback_worker(call):
     if call.data == "setup": 
         try:
-            info = DBP.get_room_in(call.message.chat.id)
+            info = DBP.get_room_data(call.message.chat.id, "day_in, mon_in, room_current, room_home")
             if not info:
                 password, room_id = password_generator()
                 currentDay = datetime.now().strftime('%d')
@@ -125,8 +138,7 @@ def callback_worker(call):
                             "room_id, day_in, mon_in, day_bal, mon_bal, room_day_in, room_mon_in, password",
                             "{}, 300, 3000, 300, 3000, {}, {}, {}".format(room_id, currentDay, currentMonth, password))
                 DBP.save_data("accounts", "user_id, room_current, room_home", "{}, {}, {}".format(call.message.chat.id, room_id, room_id))
-            info = DBP.get_room_in(call.message.chat.id)
-            bot.send_message(call.message.chat.id, "Info: {}".format(info))
+            info = DBP.get_room_data(call.message.chat.id, "day_in, mon_in, room_current, room_home")
         except Exception as e:
             bot.send_message(call.message.chat.id, e)
         bot.send_message(call.message.chat.id, """
@@ -147,7 +159,7 @@ def callback_worker(call):
 
         key_mon_bal = types.InlineKeyboardButton(text='Місячна витрата', callback_data='mon_bal')  
         keyboard.add(key_mon_bal)
-        balance = DBP.get_bal(call.message.chat.id)
+        balance = DBP.get_room_data(call.message.chat.id, "day_bal, mon_bal")
         bot.send_message(call.message.chat.id, text='Денний: {0}\nМіячний баланс: {1}'.format(balance[0], balance[1]), reply_markup=keyboard)
 
     elif call.data == "mon_bal":
@@ -161,9 +173,8 @@ def callback_worker(call):
 #Main functions
 #-------------------------------------------------------
 def setup_menu(message_type):
-    global day_in, mon_in
     try:
-        info = DBP.get_room_in(message_type.chat.id)
+        info = DBP.get_room_data(message_type.chat.id, "day_in, mon_in, room_current, room_home")
         if not info:
             password, room_id = password_generator()
             currentDay = datetime.now().strftime('%d')
@@ -172,8 +183,7 @@ def setup_menu(message_type):
                           "room_id, day_in, mon_in, day_bal, mon_bal, room_day_in, room_mon_in, password",
                           "{}, 300, 3000, 300, 3000, {}, {}, {}".format(room_id, currentDay, currentMonth, password))
             DBP.save_data("accounts", "user_id, room_current, room_home", "{}, {}, {}".format(message_type.chat.id, room_id, room_id))
-        info = DBP.get_room_in(message_type.chat.id)
-        bot.send_message(message_type.chat.id, "Info: {}".format(info))
+        info = DBP.get_room_data(message_type.chat.id, "day_in, mon_in, room_current, room_home")
     except Exception as e:
         bot.send_message(message_type.chat.id, e)    
     bot.send_message(message_type.chat.id, """
@@ -193,7 +203,7 @@ def set_day(message):
     
     try:
         if type(int(message.text)) == int:
-            info = str(DBP.get_data("accounts", "room_current", "user_id", message.from_user.id)[0])
+            info = str(DBP.get_data("accounts", "room_home", "user_id", message.from_user.id)[0])
             DBP.update_data("rooms", "room_id", info, "day_in", int(message.text))
             setup_menu(message)
     except Exception as e:
@@ -202,31 +212,30 @@ def set_day(message):
 def set_mon(message):
     try:
         if type(int(message.text)) == int:
-            info = str(DBP.get_data("accounts", "room_current", "user_id", message.from_user.id)[0])
-            bot.send_message(message.from_user.id, "Execute test: {}\n{}".format(message.from_user.id ,info))
+            info = str(DBP.get_data("accounts", "room_home", "user_id", message.from_user.id)[0])
             DBP.update_data("rooms", "room_id", info, "mon_in", int(message.text))
             setup_menu(message)
     except Exception as e:
         bot.send_message(message.from_user.id, "Введено не число: {}".format(e))
 
 def set_pass(message):
-    global password
+    data = DBP.get_home_data(message.from_user.id, "room_id")
     try:
-        password = message.text
+        DBP.update_data( "rooms", "room_id", data[0], "password", message.text)
         setup_menu(message)
-    except:
-        bot.send_message(message.from_user.id, "Щось не так")
+    except Exception as e:
+        bot.send_message(message.from_user.id, "Щось не так: {}". format(e))
 
 def set_room(message):
     try:
         room = int(message.text.split("#")[0])
         password = message.text.split("#")[1]
-        if room == room_home:
-            DBP.update_data("accounts", "user_id", message.from_user.id, "room_current", room)
-        elif rooms.get(room) == password:
+        data = DBP.get_room_set(room, "password")
+        if password == data[0]:
             DBP.update_data("accounts", "user_id", message.from_user.id, "room_current", room)
         else:
             bot.send_message(message.from_user.id, "Немає такої кімнати або пароль не вірний")
+        info = DBP.get_room_data(message.from_user.id, "day_in, mon_in, room_current, room_home")
         bot.send_message(message.from_user.id, """
 Денний +: {0}   
 Змінити /change_day
@@ -243,20 +252,27 @@ def set_room(message):
     except Exception as e:
         bot.send_message(message.from_user.id, e)
 
-def mon_bal_handler(value):
-    global mon_bal
+def mon_bal_handler(message):
     try:
-        if type(int(value.text)) == int:
-            mon_bal =int(mon_bal) - int(value.text)
-            bot.send_message(value.from_user.id, "Місячний баланс {}".format(mon_bal))
-    except Exception as e:
-        bot.send_message(value.from_user.id, e)
+        data = DBP.get_room_data(message.from_user.id, "mon_bal, room_id")
+        mon_bal = int(data[0]) - int(message.text)
+        DBP.update_data("rooms", "room_id", data[1], "mon_bal", mon_bal)
+
+        mon_bal = DBP.get_room_data(message.from_user.id, "mon_bal")
+        bot.send_message(message.from_user.id, "Місячний баланс {}".format(mon_bal[0]))
+    except:
+        bot.send_message(message.from_user.id, "Щось пішло не так ")
 
 def day_bal_handler(message):
-    global day_bal
-   
-    day_bal = int(day_bal) - int(message.text)
-    bot.send_message(message.from_user.id, "Денний баланс {}".format(day_bal))
+    try:
+        data = DBP.get_room_data(message.from_user.id, "day_bal, room_id")
+        day_bal = int(data[0]) - int(message.text)
+        DBP.update_data("rooms", "room_id", data[1], "day_bal", day_bal)
+
+        day_bal = DBP.get_room_data(message.from_user.id, "day_bal")
+        bot.send_message(message.from_user.id, "Денний баланс {}".format(day_bal[0]))
+    except:
+        bot.send_message(message.from_user.id, "Щось пішло не так ")
 
 def balance(message):
     keyboard = types.InlineKeyboardMarkup()
@@ -264,7 +280,7 @@ def balance(message):
     key_mon_bal = types.InlineKeyboardButton(text='Місячна витрата', callback_data='mon_bal')  
     keyboard.add(key_mon_bal)
 
-    balance = DBP.get_bal(message.from_user.id)
+    balance = DBP.get_room_data(message.from_user.id, "day_bal, mon_bal")
     bot.send_message(message.from_user.id, text='Денний: {0}\nМіячний баланс: {1}'.format(balance[0], balance[1]), reply_markup=keyboard)
 
 def password_generator(size=6, chars=string.ascii_uppercase + string.digits):

@@ -32,29 +32,33 @@ class DbProcessor(object):
  
     def update_data( table, id_type, id_value, param, value):
         cursor = conn.cursor(cursor_factory=DictCursor)
-        if param.endswith(',') or param.endswith(')'):
-            param = param[:-1]
-        if param[0] == '(':
-            param = param[1:]
-            print (param)
         sql =\
             """
             UPDATE {}
-                SET {} = '{}'
+                SET {} = {}
                 WHERE {} = {};
             """.format(table, param, value, id_type, id_value, )
         print(sql)
         cursor.execute(sql)
         conn.commit()
     
-    def get_room_in (user_id):
+    def get_room_data (user_id, data):
         cursor = conn.cursor(cursor_factory=DictCursor)
-        cursor.execute('SELECT day_in, mon_in, room_current, room_home FROM rooms r INNER JOIN accounts a ON r.room_id = a.room_current WHERE a.user_id = {};'.format(user_id))
+        cursor.execute('SELECT {} FROM rooms r INNER JOIN accounts a ON r.room_id = a.room_current WHERE a.user_id = {};'.format(data, user_id))
+        data = cursor.fetchone()
+        return data
+    def get_home_data (user_id, data):
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        cursor.execute('SELECT {} FROM rooms r INNER JOIN accounts a ON r.room_id = a.room_home WHERE a.user_id = {};'.format(data, user_id))
         data = cursor.fetchone()
         return data
 
-    def get_bal (user_id):
-        cursor = conn.cursor(cursor_factory=DictCursor)
-        cursor.execute('SELECT day_bal, mon_bal FROM rooms r INNER JOIN accounts a ON r.room_id = a.room_current WHERE a.user_id = {};'.format(user_id))
-        data = cursor.fetchone()
-        return data
+
+    def get_room_set (room_id, data):
+            cursor = conn.cursor(cursor_factory=DictCursor)
+            cursor.execute('SELECT {} FROM rooms WHERE room_id = {};'.format(data, room_id))
+            data = cursor.fetchone()
+            return data
+
+
+

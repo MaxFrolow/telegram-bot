@@ -106,7 +106,7 @@ def get_text_messages(message):
         else:
             bot.send_message(message.from_user.id, "Я тебя не розумію. Напиши /help.")
     except Exception as e:
-        bot.send_message(message.from_user.id, "Main: {}".format(e))
+        bot.send_message(message.from_user.id, "Введено не число")
 
 #--------------------------------------------------------
 #Callback
@@ -209,9 +209,11 @@ def set_pass(message):
     data = DBP.get_home_data(message.from_user.id, "room_id")
     try:
         DBP.update_data( "rooms", "room_id", data[0], "password", message.text)
+        bot.send_message(message.from_user.id, "Змінено" )
         setup_menu(message)
-    except Exception as e:
-        bot.send_message(message.from_user.id, "Щось не так: {}". format(e))
+    except:
+        bot.send_message(message.from_user.id, "Щось не так" )
+
 
 def set_room(message):
     try:

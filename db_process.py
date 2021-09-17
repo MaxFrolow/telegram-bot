@@ -32,6 +32,10 @@ class DbProcessor(object):
  
     def update_data( table, id_type, id_value, param, value):
         cursor = conn.cursor(cursor_factory=DictCursor)
+        if value.startswith("("):
+            pass
+        else:
+            value = "'" + str(value) + "'"
         sql =\
             """
             UPDATE {}

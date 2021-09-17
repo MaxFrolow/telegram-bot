@@ -20,23 +20,8 @@ DBP = DbProcessor
 #-------------------------------------------------------
 
 
-rooms = {123456:"123456",
-         111111:"111111"}
 
-
-day_bal = 300
-mon_bal = 2000
-day_in = 200
-mon_in = 1000
-date_last = ""
-date_now = ""
-datem_last = ""
-datem_now = ""
-password = "123456"
-room_home="123456"
-room_current="123456"
 help_text ="""
-Завантажено базові команди
 Спочатку потрібно налаштувати бота: /setup
 
 Налаштування:
@@ -48,6 +33,7 @@ help_text ="""
 Будь яке число буде відніматися від денного балансу.
 Для відняття від місячного балансу використати: 
 /mon_bal
+або
 /start -> Баланс -> Місячна витрата
 """
 #--------------------------------------------------------
@@ -77,6 +63,7 @@ def get_text_messages(message):
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             markup.add('/start', 'Перевірити Баланс', '/setup', "/mon_bal")
             bot.send_message(message.from_user.id, text='Завантажено базові команди', reply_markup=markup)
+            bot.send_message(message.from_user.id, text=help_text)
         
         elif message.text == "/start":
             keyboard = types.InlineKeyboardMarkup()

@@ -59,6 +59,3 @@ class DbProcessor(object):
             cursor.execute('SELECT {} FROM rooms WHERE room_id = {};'.format(data, room_id))
             data = cursor.fetchone()
             return data
-
-
-

@@ -32,15 +32,18 @@ class DbProcessor(object):
  
     def update_data( table, id_type, id_value, param, value):
         cursor = conn.cursor(cursor_factory=DictCursor)
-        try:
-            if value.startswith("("):
-                pass
-            elif type(int(value)) == int:
-                value = int(value)
-            else:
-                value = "'" + str(value) + "'"
-        except:
-            print("formating went wrong")
+        sql =\
+            """
+            UPDATE {}
+                SET {} = '{}'
+                WHERE {} = {};
+            """.format(table, param, value, id_type, id_value, )
+        print(sql)
+        cursor.execute(sql)
+        conn.commit()
+    
+    def update_date_data( table, id_type, id_value, param, value):
+        cursor = conn.cursor(cursor_factory=DictCursor)
         sql =\
             """
             UPDATE {}
@@ -50,7 +53,10 @@ class DbProcessor(object):
         print(sql)
         cursor.execute(sql)
         conn.commit()
-    
+
+
+
+
     def get_room_data (user_id, data):
         cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT {} FROM rooms r INNER JOIN accounts a ON r.room_id = a.room_current WHERE a.user_id = {};'.format(data, user_id))

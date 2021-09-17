@@ -50,10 +50,10 @@ def get_text_messages(message):
         data = DBP.get_room_data(message.chat.id, "room_day_in, room_mon_in, day_bal, mon_bal, day_in, mon_in, room_id")
         if currentDay != data[0]:
             summ = int(data[4]) + int(data[2]) 
-            DBP.update_data("rooms", "room_id", data[6], "(day_bal, room_day_in)", "('{}', '{}')".format( summ, currentDay))
+            DBP.update_date_data("rooms", "room_id", data[6], "(day_bal, room_day_in)", "('{}', '{}')".format( summ, currentDay))
         if currentMonth != data[1]:
             summ = int(data[5]) + int(data[3]) 
-            DBP.update_data("rooms", "room_id", data[6], "(mon_bal, room_mon_in)", "('{}', '{}')".format(summ , currentMonth))
+            DBP.update_date_data("rooms", "room_id", data[6], "(mon_bal, room_mon_in)", "('{}', '{}')".format(summ , currentMonth))
         
     except:
         print('empty')

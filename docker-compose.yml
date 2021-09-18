@@ -18,7 +18,7 @@ services:
       - "6432:5432"
     image: postgres:13.4
     volumes:
-      - /opt/telegram_bot/postgres:/var/lib/postgresql
+      - /opt/telegram-bot/postgres:/var/lib/postgresql
     environment:
         - POSTGRES_PASSWORD=777WhyMeLucky777
     command: postgres

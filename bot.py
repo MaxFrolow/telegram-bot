@@ -275,8 +275,12 @@ def balance(message):
 def password_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choices(string.digits, k=size)), ''.join(random.choices(string.digits, k=size))
 
-
-bot.polling(none_stop=True, interval = 0)
+try:
+    bot.polling(none_stop=True)
+except Exception as err:
+    logging.error(err)
+    time.sleep(5)
+    print ("Internet error!")
 
 
 
